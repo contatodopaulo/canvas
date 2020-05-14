@@ -2,76 +2,72 @@
 //HTML escrito a partir deste JS, como "appends" de texto em elementos, devem conter códigos para letras acentuadas. Motivo: formatação UTF-8 inclusas após o carregamento da página, não é processada pelo Canvas. Problema desconhecido.
 //Tabela de acentos e caracteres especiais em HTML abaixo:
 
-/*
-
-æ .................. &aelig;
-É ................ &Eacute;
-é ............... &eacute;
-Ê ................. &Ecirc;
-ê ................ &ecirc;
-È ................ &Egrave;
-è ............... &egrave;
-Ë .................. &Euml;
-ë ................. &euml;
-Ð ................... &ETH;
-ð .................. &eth;
-Í ................ &Iacute;
-í ............... &iacute;
-Î ................. &Icirc;
-î ................ &icirc;
-Ì ................ &Igrave;
-ì ............... &igrave;
-Ï .................. &Iuml;
-ï ................. &iuml;
-Ó ........... &Oacute;
-ó .............. &oacute;
-Ô ................ &Ocirc;
-ô ................. &ocirc;
-Ò .............. &Ograve;
-ò ............... &ograve;
-Ø ................ &Oslash;
-ø ............... &oslash;
-Õ ................ &Otilde;
-õ ............... &otilde;
-Ö .................. &Ouml;
-ö ................. &ouml;
-Ú .............. &Uacute;
-ú ............... &uacute;
-Û ................ &Ucirc;
-û ................ &ucirc;
-Ù ............. &Ugrave;
-ù .............. &ugrave;
-Ü ................. &Uuml;
-ü ................. &uuml;
-Ç ............... &Ccedil;
-ç ............... &ccedil;
-Ñ ............... &Ntilde;
-ñ ............... &ntilde;
-< ................. &lt;
-> ................. &gt;
-& ................ &amp;
-" ................. &quot;
-® .................. &reg;
-© ............... &copy;
-Ý ............ &Yacute;
-ý ............ &yacute;
-Þ .............. &THORN;
-þ ................ &thorn;
-ß ................ &szlig;
-*/
-
-
 $(document).ready(function () {
 
-    /*
-    Semana da educação 4.0 
-    - Trazendo video para dentro dos itens para serem exibidos antes do click de acesso)
-    - Link do curso: https://igti.instructure.com/courses/2888
-    
-*/
-    if(window.location.href === "https://igti.instructure.com/courses/2888"){
+    // Modal de aviso
+    var modal_estilos = 'display: block;'
+        + 'width: 700px; max-width: 600px;'
+        + 'background: #fff; padding: 15px;'
+        + 'border-radius: 5px;'
+        + '-webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
+        + '-moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
+        + 'box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
+        + 'position: fixed;'
+        + 'top: 50%; left: 50%;'
+        + 'transform: translate(-50%,-50%);'
+        + 'z-index: 99999999; text-align: center';
+
+    var fundo_modal_estilos = 'top: 0; right: 0;'
+        + 'bottom: 0; left: 0; position: fixed;'
+        + 'background-color: rgba(0, 0, 0, 0.6); z-index: 99999999;'
+        + 'display: none;';
+
+    var meu_modal = '<div id="fundo_modal" style="' + fundo_modal_estilos + '">'
+        + '<div id="meu_modal" style="' + modal_estilos + '">'
+        + '<h4 style="margin: 20px 0;">Olá! Informamos que o módulo de Fundamentos do bootcamp estará disponível dia 14/05, às 20 horas.</h4><span>Equipe IGTI<br></span><br/>'
+        + '<button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px; width: 200px; margin: 0px 0 15px 0; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal">Ok</button>'
+        + '</div></div>';
+
+    $("body").append(meu_modal);
+
+    $("#fundo_modal, .close").click(function () { $("#fundo_modal").fadeOut(100); });
+    $("#meu_modal").click(function (e) { e.stopPropagation(); });
+
+    $("#btnModal").click(function () {
+        $('#fundo_modal').fadeOut(100);
+    });
+
+    //Comparando se tem algum modulo de bootcamp ou se está na página de bootcamp
+    var ModuleBootcamp = false;
+
+    if (ENV.STUDENT_PLANNER_COURSES) {
+        ENV.STUDENT_PLANNER_COURSES.forEach(c => {
+            if (c.originalName.indexOf('Bootcamp') != -1) ModuleBootcamp = true;
+        });
+    }
+
+    //Implementando aviso
+
+    if (!localStorage.getItem('@IGTI:ModalFundamentos')) {
+        cursosComAviso = ['2944', '2945', '2946', '2939', '2940', '2941', '2942', '2934', '2935', '2936', '2937', '2932', '2933', '2938'];
+
+        cursosComAviso.forEach((curso) => {
+            if (window.location.href.indexOf(curso) >= 0) {
+                ModuleBootcamp = true;
+                $("#fundo_modal").fadeIn(50);
+                localStorage.setItem('@IGTI:ModalFundamentos', true)
+            }
+        });
+    }
+
+    //  Semana da educação 4.0 
+    //  - Trazendo video para dentro dos itens para serem exibidos antes do click de acesso)
+    //  - Link do curso: https://igti.instructure.com/courses/2888
+
+    if (window.location.href === "https://igti.instructure.com/courses/2888") {
         $('#context_module_item_186732 div.ig-row').html('<div style="width: 100%; margin-left: auto; margin-right: auto; overflow: hidden;"><h1 align="center"><iframe src="https://player.vimeo.com/video/408980040?title=0&amp;byline=0&amp;portrait=0" position: "relative" overflow:"hidden" width="100%" height="400px" frameborder="0" allow="autoplay; fullscreen" allowfullscreen=""></iframe></h1></div>')
     }
+
     //Progress bar
 
     function alterandoIcon_itemConcuido() {
@@ -122,12 +118,6 @@ $(document).ready(function () {
         progressBar();
     }, 2000);
 
-    //FUNÇÕES AUXILIARES
-    function findItem(type, text) {
-        element = Array.from(document.querySelectorAll(type)).find(el => el.textContent === text);
-        return element;
-    }
-
     //IMPLEMENTAÇÕES ANTIGAS
 
     //Retira o overlay de cor dos boxs de cursos no dashboard:
@@ -156,26 +146,59 @@ $(document).ready(function () {
 
     //se estiver na página inicial do grupo:
     if (window.location.pathname.indexOf('/login/canvas') != 0) {
-        setTimeout(function () {
-            //<!-- Start of igti Zendesk Widget script -->
-            window.zEmbed || function (e, t) {
-                var n, o, d, i, s, a = [],
-                    r = document.createElement("iframe");
-                window.zEmbed = function () {
-                    a.push(arguments)
-                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
-                try {
-                    o = s
-                } catch (e) {
-                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
-                }
-                o.open()._l = function () {
-                    var e = this.createElement("script");
-                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
-                }, o.write('<body onload="document._l();">'), o.close()
-            }();
-            //<!-- End of igti Zendesk Widget script -->
 
+        setTimeout(function () {
+            if (ModuleBootcamp) {
+
+                //Bootcamp Zendesk
+
+                window.zEmbed || function (e, t) {
+                    var n, o, d, i, s, a = [],
+                        r = document.createElement("iframe");
+                    window.zEmbed = function () {
+                        a.push(arguments)
+                    }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                    try {
+                        o = s
+                    } catch (e) {
+                        n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                    }
+                    o.open()._l = function () {
+                        var e = this.createElement("script");
+                        n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                    }, o.write('<body onload="document._l();">'), o.close()
+                    window.zESettings = {
+                        webWidget: {
+                            helpCenter: {
+                                suppress: false,
+                                filter: {
+                                    section: '360008642151-Matrícula, 360008628431-Pontuação-e-Notas, 360008618711-Aulas'
+                                },
+                            },
+                        }
+                    }
+                }();
+            } else {
+
+                //Pós-graduação Zendesk
+
+                window.zEmbed || function (e, t) {
+                    var n, o, d, i, s, a = [],
+                        r = document.createElement("iframe");
+                    window.zEmbed = function () {
+                        a.push(arguments)
+                    }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                    try {
+                        o = s
+                    } catch (e) {
+                        n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                    }
+                    o.open()._l = function () {
+                        var e = this.createElement("script");
+                        n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                    }, o.write('<body onload="document._l();">'), o.close()
+                }();
+            }
         }, 100);
     };
 
