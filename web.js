@@ -4,25 +4,11 @@
 
 $(document).ready(function () {
 
-    const url = window.location.href;
-
-    const bootcamps = ['2944', '2945', '2946', '2939', '2940', '2941', '2942', '2934', '2935', '2936', '2937', '2932', '2933', '2938'];
-    const parceiros = ['2950', '2977', '2978'];
-
-    var tipoDeCursoAtual = 'pós-graduação';
-
-    bootcamps && bootcamps.forEach(curso => {
-            if (url.indexOf(curso) > 0) tipoDeCursoAtual = 'bootcamp';
-        });
-
-    parceiros && parceiros.forEach(curso => {
-            if (url.indexOf(curso) > 0) tipoDeCursoAtual = 'parceiros';
-        });
 
     // Modal de aviso
     var modal_estilos = 'display: block;'
-        + 'width: 700px; max-width: 600px;'
-        + 'background: #fff; padding: 15px;'
+        + 'max-width: 700px; padding: 25px;'
+        + 'background: #fff;'
         + 'border-radius: 5px;'
         + '-webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
         + '-moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
@@ -30,17 +16,20 @@ $(document).ready(function () {
         + 'position: fixed;'
         + 'top: 50%; left: 50%;'
         + 'transform: translate(-50%,-50%);'
-        + 'z-index: 99999999; text-align: center';
+        + 'z-index: 99999999;';
 
     var fundo_modal_estilos = 'top: 0; right: 0;'
         + 'bottom: 0; left: 0; position: fixed;'
         + 'background-color: rgba(0, 0, 0, 0.6); z-index: 99999999;'
         + 'display: none;';
 
+
     var meu_modal = '<div id="fundo_modal" style="' + fundo_modal_estilos + '">'
         + '<div id="meu_modal" style="' + modal_estilos + '">'
-        + '<h4 style="margin: 20px 0;">Olá! Informamos que o próximo módulo do seu bootcamp estará disponível dia 28/05, às 20 horas.</h4><span>Equipe IGTI<br></span><br/>'
-        + '<button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px; width: 200px; margin: 0px 0 15px 0; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal">Ok</button>'
+        + '<h1 style="margin-bottom: 25px;">Programa de Bolsas para Bootcamps</h1>'
+        + '<p style="margin-bottom: 20px; text-align: justify; text-justify: inter-word;" >Está aberto até 30 de junho, o processo seletivo de bolsas para bootcamps do IGTI. São 13 bootcamps subsidiados pelo programa, nas áreas de Software Development, Inteligência Artificial, Data Science, Cybersecurity, Cloud Computing e UX.</p>'
+        + '<p style="margin-bottom: 35px;">Para inscrever-se no processo seletivo acesse <a target="_blank" href="https://bit.ly/3eNmT4F">aqui</a></p>'
+        + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal">Ok</button></div>'
         + '</div></div>';
 
     $("body").append(meu_modal);
@@ -52,11 +41,166 @@ $(document).ready(function () {
         $('#fundo_modal').fadeOut(100);
     });
 
-    var dataDeInspiracaoDoModal = new Date(2020, 4, 28, 20);
+    var dataDeInspiracaoDoModal = new Date(2020, 6, 29, 22);
 
-    if (tipoDeCursoAtual == 'bootcamp' && !localStorage.getItem('@IGTI:ModalModulo3Bootcamp') && (new Date().getDate() <= dataDeInspiracaoDoModal.getDate() && new Date().getHours() < dataDeInspiracaoDoModal.getHours())) {
-        $("#fundo_modal").fadeIn(200);
-        localStorage.setItem('@IGTI:ModalModulo3Bootcamp', true);
+    //CURSOS
+    const bootcamps = ['2944', '2945', '2946', '2939', '2940', '2941', '2942', '2934', '2935', '2936', '2937', '2932', '2933', '2938'];
+    const parceiros = ['2950', '2977', '2978'];
+
+    //Variáveis globais
+    const isLoginScreen = window.location.href.indexOf('/login/canvas');
+    const url = window.location.href;
+
+    //Chamadas
+    if (isLoginScreen == -1) {
+        renderizarZendesk(getTipoDeCursoAtual());
+
+        if (!localStorage.getItem('@IGTI:ModalBootcamp04Jun2020') && new Date() < dataDeInspiracaoDoModal) {
+            $("#fundo_modal").fadeIn(200);
+            localStorage.setItem('@IGTI:ModalBootcamp04Jun2020', true);
+        }
+    };
+
+    //Funções
+    function getTipoDeCursoAtual() {
+        //Caso o usuário esteja na página de inicio.  
+        var tipo;
+
+        parceiros && parceiros.forEach(curso => {
+            if (url.indexOf(curso) > 0) {
+                tipo = 'parceiros';
+            } else if (ENV.STUDENT_PLANNER_COURSES) {
+                ENV.STUDENT_PLANNER_COURSES.forEach(cursoEnv => {
+                    if (cursoEnv.id == curso) tipo = 'parceiros'
+                });
+            }
+        });
+
+        if (!tipo) {
+            bootcamps && bootcamps.forEach(curso => {
+                if (url.indexOf(curso) > 0) {
+                    tipo = 'bootcamp'
+                } else if (ENV.STUDENT_PLANNER_COURSES) {
+                    ENV.STUDENT_PLANNER_COURSES.forEach(cursoEnv => {
+                        if (cursoEnv.id == curso) tipo = 'bootcamp'
+                    })
+                }
+            })
+        }
+
+        if (!tipo) tipo = 'pos';
+
+        return tipo; //parceiros | bootcamp | pos
+    }
+
+    function renderizarZendesk(tipoDeCurso) {
+        if (tipoDeCurso == 'parceiros') {
+            window.zEmbed || function (e, t) {
+                var n, o, d, i, s, a = [],
+                    r = document.createElement("iframe");
+                window.zEmbed = function () {
+                    a.push(arguments)
+                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                try {
+                    o = s
+                } catch (e) {
+                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                }
+                o.open()._l = function () {
+                    var e = this.createElement("script");
+                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                }, o.write('<body onload="document._l();">'), o.close()
+                window.zESettings = {
+                    webWidget: {
+                        helpCenter: {
+                            suppress: false,
+                            filter: {
+                                section: '360009058131-Seleção-da-oferta-para-divulgação, 360008969172-Divulgação-da-oferta, 360009100671-Analise-de-desempenho, 360007958792-Atendimento-ao-parceiro'
+                            },
+                        },
+
+                        chat: {
+                            departments: {
+                                enabled: ['Parceiros'],
+                                select: 'Parceiros'
+                            },
+                            title: {
+                                '*': 'Atendimento ao Parceiro'
+
+                            }
+
+                        },
+
+                        launcher: {
+                            chatLabel: {
+                                '*': 'Atendimento'
+                            }
+                        },
+
+                        contactForm: {
+                            title: {
+                                '*': 'Atendimento ao Parceiro'
+                            }
+                        },
+
+                    }
+                }
+            }();
+        }
+
+        if (tipoDeCurso == 'bootcamp') {
+            window.zEmbed || function (e, t) {
+                var n, o, d, i, s, a = [],
+                    r = document.createElement("iframe");
+                window.zEmbed = function () {
+                    a.push(arguments)
+                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                try {
+                    o = s
+                } catch (e) {
+                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                }
+                o.open()._l = function () {
+                    var e = this.createElement("script");
+                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                }, o.write('<body onload="document._l();">'), o.close()
+                window.zESettings = {
+                    webWidget: {
+                        helpCenter: {
+                            suppress: false,
+                            filter: {
+                                section: '360008642151-Matrícula, 360008628431-Pontuação-e-Notas, 360008618711-Aulas'
+                            },
+                        },
+                    }
+                }
+            }();
+        }
+
+        if (tipoDeCurso == 'pos') {
+
+            window.zEmbed || function (e, t) {
+                var n, o, d, i, s, a = [],
+                    r = document.createElement("iframe");
+                window.zEmbed = function () {
+                    a.push(arguments)
+                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                try {
+                    o = s
+                } catch (e) {
+                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                }
+                o.open()._l = function () {
+                    var e = this.createElement("script");
+                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                }, o.write('<body onload="document._l();">'), o.close()
+            }();
+        }
+    }
+
+    //Imagem no curso 2948
+    if (url.indexOf('/courses/2948') > 0) {
+        $('#context_module_item_193043 div.ig-row').html('<img src="https://igti.instructure.com/courses/2948/files/194266/preview" alt="PSBtc.png" data-api-endpoint="https://igti.instructure.com/api/v1/courses/2948/files/194266" data-api-returntype="File">')
     }
 
     //  Semana da educação 4.0 
@@ -75,6 +219,12 @@ $(document).ready(function () {
 
     function progressBar() {
 
+        var tituloBarraDeProgresso = 'Progresso da disciplina';
+
+        if (getTipoDeCursoAtual() == 'bootcamp') {
+            tituloBarraDeProgresso = tituloBarraDeProgresso.replace('da disciplina', 'do bootcamp');
+        }
+
         var quant_itens_unchecked = $(".icon-mark-as-read");
         var quant_itens_checked = $(".module-item-status-icon [title='Completo']");
         var quant_itens_unchecked = quant_itens_unchecked.length;
@@ -83,10 +233,11 @@ $(document).ready(function () {
         var percentual_concluido = parseInt((100 * quant_itens_checked) / quant_itens_curso);
 
         if (window.location.pathname.indexOf('/courses/') == 0 && quant_itens_curso > 0) {
-            $('ul.pill').hide();
+            $('.requirements_message').hide();
+            $('.ig-header-admin').hide();
             if (percentual_concluido > 0) {
                 console.log("Barra de progresso carregada");
-                $("#right-side-wrapper").prepend('<div class="progress_bar animated fadeInDown"><div style="padding: 0px 5px;">Progresso da disciplina <span style="float: right;">' + percentual_concluido + '%<span></div><div class="pro-bar" style="margin-top: 7px; border-radius: 50px;"><div class="pro-bg"></div><div class="progress-bar-inner" style="border-radius: 50px; width: ' + percentual_concluido + '%; background: #00afa2;"></div></div></div>');
+                $("#right-side-wrapper").prepend(`<div class="progress_bar animated fadeInDown"><div style="padding: 0px 5px;">${tituloBarraDeProgresso} <span style="float: right;">${percentual_concluido}%<span></div><div class="pro-bar" style="margin-top: 7px; border-radius: 50px;"><div class="pro-bg"></div><div class="progress-bar-inner" style="border-radius: 50px; width: ${percentual_concluido}%; background: #00afa2;"></div></div></div>`);
             }
             else {
                 console.log("Barra de progresso não carregada, percentual não iniciado.");
@@ -145,123 +296,7 @@ $(document).ready(function () {
 
     //se estiver na página inicial do grupo:,
 
-    function zendesk(categoria) {
-        if (categoria == 'parceiros') {
-            window.zEmbed || function (e, t) {
-                var n, o, d, i, s, a = [],
-                    r = document.createElement("iframe");
-                window.zEmbed = function () {
-                    a.push(arguments)
-                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
-                try {
-                    o = s
-                } catch (e) {
-                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
-                }
-                o.open()._l = function () {
-                    var e = this.createElement("script");
-                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
-                }, o.write('<body onload="document._l();">'), o.close()
-                window.zESettings = {
-                    webWidget: {
-                        helpCenter: {
-                            suppress: false,
-                            filter: {
-                                section: '360007935511-Ofertas, 360007859772-Conversões'
-                            },
-                        },
 
-                        chat: {
-                            departments: {
-                                enabled: ['Parceiros'],
-                                select: 'Parceiros'
-                            },
-                            title: {
-                                '*': 'Atendimento ao Parceiro'
-
-                            }
-
-                        },
-
-                        launcher: {
-                            chatLabel: {
-                                '*': 'Atendimento'
-                            }
-                        },
-
-                        contactForm: {
-                            title: {
-                                '*': 'Atendimento ao Parceiro'
-                            }
-                        },
-
-                    }
-                }
-            }();
-        }
-
-        if (categoria == 'bootcamp') {
-            window.zEmbed || function (e, t) {
-                var n, o, d, i, s, a = [],
-                    r = document.createElement("iframe");
-                window.zEmbed = function () {
-                    a.push(arguments)
-                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
-                try {
-                    o = s
-                } catch (e) {
-                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
-                }
-                o.open()._l = function () {
-                    var e = this.createElement("script");
-                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
-                }, o.write('<body onload="document._l();">'), o.close()
-                window.zESettings = {
-                    webWidget: {
-                        helpCenter: {
-                            suppress: false,
-                            filter: {
-                                section: '360008642151-Matrícula, 360008628431-Pontuação-e-Notas, 360008618711-Aulas'
-                            },
-                        },
-                    }
-                }
-            }();
-        }
-
-        if (categoria == 'pós-graduação') {
-
-            window.zEmbed || function (e, t) {
-                var n, o, d, i, s, a = [],
-                    r = document.createElement("iframe");
-                window.zEmbed = function () {
-                    a.push(arguments)
-                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
-                try {
-                    o = s
-                } catch (e) {
-                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
-                }
-                o.open()._l = function () {
-                    var e = this.createElement("script");
-                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
-                }, o.write('<body onload="document._l();">'), o.close()
-            }();
-        }
-    }
-
-    if (url.indexOf('/login/canvas') != 0) {
-        setTimeout(function () {
-            if (tipoDeCursoAtual == 'parceiros') {
-                zendesk('parceiros');
-            }
-            else if (tipoDeCursoAtual == 'bootcamp') {
-                zendesk('bootcamp');
-            } else {
-                zendesk('pós-graduação');
-            }
-        }, 100);
-    };
 
     if (window.location.pathname.indexOf('/quizzes/') >= 0) {
         $('a#preview_quiz_button').click(function () {
