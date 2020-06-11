@@ -1,47 +1,6 @@
 //IGTI - Custom javascript
 //HTML escrito a partir deste JS, como "appends" de texto em elementos, devem conter códigos para letras acentuadas. Motivo: formatação UTF-8 inclusas após o carregamento da página, não é processada pelo Canvas. Problema desconhecido.
-//Tabela de acentos e caracteres especiais em HTML abaixo:
-
 $(document).ready(function () {
-
-
-    // Modal de aviso
-    var modal_estilos = 'display: block;'
-        + 'max-width: 700px; padding: 25px;'
-        + 'background: #fff;'
-        + 'border-radius: 5px;'
-        + '-webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
-        + '-moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
-        + 'box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75);'
-        + 'position: fixed;'
-        + 'top: 50%; left: 50%;'
-        + 'transform: translate(-50%,-50%);'
-        + 'z-index: 99999999;';
-
-    var fundo_modal_estilos = 'top: 0; right: 0;'
-        + 'bottom: 0; left: 0; position: fixed;'
-        + 'background-color: rgba(0, 0, 0, 0.6); z-index: 99999999;'
-        + 'display: none;';
-
-
-    var meu_modal = '<div id="fundo_modal" style="' + fundo_modal_estilos + '">'
-        + '<div id="meu_modal" style="' + modal_estilos + '">'
-        + '<h1 style="margin-bottom: 25px;">Programa de Bolsas para Bootcamps</h1>'
-        + '<p style="margin-bottom: 20px; text-align: justify; text-justify: inter-word;" >Está aberto até 30 de junho, o processo seletivo de bolsas para bootcamps do IGTI. São 13 bootcamps subsidiados pelo programa, nas áreas de Software Development, Inteligência Artificial, Data Science, Cybersecurity, Cloud Computing e UX.</p>'
-        + '<p style="margin-bottom: 35px;">Para inscrever-se no processo seletivo acesse <a target="_blank" href="https://bit.ly/3eNmT4F">aqui</a></p>'
-        + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal">Ok</button></div>'
-        + '</div></div>';
-
-    $("body").append(meu_modal);
-
-    $("#fundo_modal, .close").click(function () { $("#fundo_modal").fadeOut(100); });
-    $("#meu_modal").click(function (e) { e.stopPropagation(); });
-
-    $("#btnModal").click(function () {
-        $('#fundo_modal').fadeOut(100);
-    });
-
-    var dataDeInspiracaoDoModal = new Date(2020, 6, 29, 22);
 
     //CURSOS
     const bootcamps = ['2944', '2945', '2946', '2939', '2940', '2941', '2942', '2934', '2935', '2936', '2937', '2932', '2933', '2938'];
@@ -49,20 +8,26 @@ $(document).ready(function () {
 
     //Variáveis globais
     const isLoginScreen = window.location.href.indexOf('/login/canvas');
+    const isCourse = window.location.href.indexOf('/courses/');
     const url = window.location.href;
 
     //Chamadas
     if (isLoginScreen == -1) {
-        renderizarZendesk(getTipoDeCursoAtual());
-
-        if (!localStorage.getItem('@IGTI:ModalBootcamp04Jun2020') && new Date() < dataDeInspiracaoDoModal) {
-            $("#fundo_modal").fadeIn(200);
-            localStorage.setItem('@IGTI:ModalBootcamp04Jun2020', true);
-        }
+        renderizarZendesk(tipoDeCursoAtual());
+        renderizarModais();
     };
 
+    if (url == 'https://igti.instructure.com/?login_success=1' || url == 'https://igti.instructure.com/') {
+        impossibilitarAlunoDeRejeitarDisciplina();
+    }
+
+    if (isCourse > 0) {
+        modificarElementosCurso();
+        addBarraProgresso();
+    }
+
     //Funções
-    function getTipoDeCursoAtual() {
+    function tipoDeCursoAtual() {
         //Caso o usuário esteja na página de inicio.  
         var tipo;
 
@@ -198,6 +163,134 @@ $(document).ready(function () {
         }
     }
 
+    function renderizarModais() {
+        // Modal de aviso
+        var modal_estilos = 'display: block; max-width: 700px; padding: 25px; background: #fff; border-radius: 5px; -webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); -moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 99999999;';
+        var fundo_modal_estilos = 'top: 0; right: 0; bottom: 0; left: 0; position: fixed; background-color: rgba(0, 0, 0, 0.6); z-index: 99999999; display: none;';
+
+        $(".fundo_modal, .close").click(function () { $(".fundo_modal").fadeOut(100); });
+        $(".modalStop").click(function (e) { e.stopPropagation(); });
+
+        //Ao passar o mes para dataExpiracao, subtrair 1. 
+
+        const modals = [
+            {
+                name: "inscricoesBootcamp",
+                dataExpiracao: new Date(2020, 5, 29, 22),
+                chamada: () => {
+                    if (!localStorage.getItem('@IGTI:ModalBootcamp04Jun2020') && new Date() < new Date(2020, 6, 29, 22)) {
+                        var modal_inscricoesBootcamp = '<div id="modal_inscricoesBootcamp" class="fundo_modal" style="' + fundo_modal_estilos + '">'
+                            + '<div class="modalStop" style="' + modal_estilos + '">'
+                            + '<h1 style="margin-bottom: 25px;">Programa de Bolsas para Bootcamps</h1>'
+                            + '<p style="margin-bottom: 20px; text-align: justify; text-justify: inter-word;" >Está aberto até 30 de junho, o processo seletivo de bolsas para bootcamps do IGTI. São 13 bootcamps subsidiados pelo programa, nas áreas de Software Development, Inteligência Artificial, Data Science, Cybersecurity, Cloud Computing e UX.</p>'
+                            + '<p style="margin-bottom: 35px;">Para inscrever-se no processo seletivo acesse <a target="_blank" href="https://bit.ly/3eNmT4F">aqui</a></p>'
+                            + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal_inscricoesBootcamp">Ok</button></div>'
+                            + '</div></div>';
+
+                        $("body").append(modal_inscricoesBootcamp);
+                        $("#modal_inscricoesBootcamp").fadeIn(200);
+
+                        localStorage.setItem('@IGTI:ModalBootcamp04Jun2020', true);
+
+                        $("#btnModal_inscricoesBootcamp").click(function () {
+                            $('#modal_inscricoesBootcamp').fadeOut(100);
+                        });
+
+                        return true;
+                    }
+
+                    return false;
+                }
+            },
+            {
+                name: "avisoTemporario",
+                dataExpiracao: new Date(2020, 5, 11, 23),
+                chamada: () => {
+                    function isUrl() {
+                        const urls = ['2944', '2945', '2946', '2939', '2940', '2941', '2942', '2934', '2935', '2936', '2937', '2932', '2933', '2938'];
+                        const response = urls.find(c => window.location.href.indexOf(c) > 0);
+                        if (response) return true;
+                        else return false;
+                    }
+
+                    if (isUrl() && !localStorage.getItem('@IGTI:Modal:11Jun2020')) {
+                        var modal_avisoTemporario = '<div id="modal_avisoTemporario" class="fundo_modal" style="' + fundo_modal_estilos + '">'
+                            + '<div class="modalStop" style="' + modal_estilos + '">'
+                            + '<p style="margin-bottom: 20px; text-align: center;" >Devido ao feriado religioso do dia 11/06, o restante do material deste módulo será liberado até às 22h do dia 12/06.</p>'
+                            + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnmodal_avisoTemporario">Ok</button></div>'
+                            + '</div></div>';
+
+                        $("body").append(modal_avisoTemporario);
+                        $("#modal_avisoTemporario").fadeIn(200);
+
+                        localStorage.setItem('@IGTI:Modal:11Jun2020', true);
+
+                        $("#btnmodal_avisoTemporario").click(function () {
+                            $('#modal_avisoTemporario').fadeOut(100);
+                        });
+                        return true;
+                    }
+                    return false;
+                }
+            }
+        ]
+
+        if (modals.length > 0) {
+            var UmModalPorChamada = false;
+
+            modals.forEach(modal => {
+                if (new Date() < modal.dataExpiracao && UmModalPorChamada == false) {
+                    if (modal.chamada()) UmModalPorChamada = true;
+                }
+            })
+        }
+    }
+
+    function impossibilitarAlunoDeRejeitarDisciplina() {
+        var btn = $('button[name="reject"]');
+        btn.on('click', function () {
+            var texto_aviso_rejeitar = '<div id="alerta_div_rejeitar" class="alert alert-danger animated pulse" style="padding: 15px 25px; margin-bottom: 50px;"><strong>Voc&ecirc; j&aacute; est&aacute; matriculado nesta disciplina!</strong><br>Para informa&ccedil;&otilde;es sobre trancamento, utilize o bot&atilde;o "Ajuda" abaixo.</div>';
+            btn.attr("disabled", true);
+            $("#content").prepend(texto_aviso_rejeitar);
+        });
+    }
+
+    function modificarElementosCurso() {
+        var renderizandoModificacoes = setInterval(() => {
+            //Mudando icon de check
+            $(".module-item-status-icon [title='Completo']").addClass("icon-Solid icon-publish");
+
+            //Removendo elementos no cabeçalho dos blocos
+            $('.requirements_message').hide();
+            $('.ig-header-admin').hide();
+        }, 150);
+
+        setTimeout(() => {
+            clearInterval(renderizandoModificacoes)
+        }, 4000)
+    }
+
+    function addBarraProgresso() {
+        setTimeout(() => {
+            var tituloBarraDeProgresso = 'Progresso da disciplina';
+            var quant_itens_unchecked = $(".icon-mark-as-read");
+            var quant_itens_checked = $(".module-item-status-icon [title='Completo']");
+            var quant_itens_unchecked = quant_itens_unchecked.length;
+            var quant_itens_checked = quant_itens_checked.length;
+            var quant_itens_curso = quant_itens_checked + quant_itens_unchecked;
+            var percentual_concluido = parseInt((100 * quant_itens_checked) / quant_itens_curso);
+
+            if (tipoDeCursoAtual() == 'bootcamp') {
+                tituloBarraDeProgresso = tituloBarraDeProgresso.replace('da disciplina', 'do bootcamp');
+            }
+
+            if (percentual_concluido > 0) {
+                console.log("Barra de progresso carregada");
+                $("#right-side-wrapper").prepend(`<div class="progress_bar animated fadeInDown"><div style="padding: 0px 5px;">${tituloBarraDeProgresso} <span style="float: right;">${percentual_concluido}%<span></div><div class="pro-bar" style="margin-top: 7px; border-radius: 50px;"><div class="pro-bg"></div><div class="progress-bar-inner" style="border-radius: 50px; width: ${percentual_concluido}%; background: #00afa2;"></div></div></div>`);
+            }
+        }, 2000);
+    }
+
     //Imagem no curso 2948
     if (url.indexOf('/courses/2948') > 0) {
         $('#context_module_item_193043 div.ig-row').html('<img src="https://igti.instructure.com/courses/2948/files/194266/preview" alt="PSBtc.png" data-api-endpoint="https://igti.instructure.com/api/v1/courses/2948/files/194266" data-api-returntype="File">')
@@ -210,63 +303,6 @@ $(document).ready(function () {
     if (window.location.href === "https://igti.instructure.com/courses/2888") {
         $('#context_module_item_186732 div.ig-row').html('<div style="width: 100%; margin-left: auto; margin-right: auto; overflow: hidden;"><h1 align="center"><iframe src="https://player.vimeo.com/video/408980040?title=0&amp;byline=0&amp;portrait=0" position: "relative" overflow:"hidden" width="100%" height="400px" frameborder="0" allow="autoplay; fullscreen" allowfullscreen=""></iframe></h1></div>')
     }
-
-    //Progress bar
-
-    function alterandoIcon_itemConcuido() {
-        $(".module-item-status-icon [title='Completo']").addClass("icon-Solid icon-publish");
-    }
-
-    function progressBar() {
-
-        var tituloBarraDeProgresso = 'Progresso da disciplina';
-
-        if (getTipoDeCursoAtual() == 'bootcamp') {
-            tituloBarraDeProgresso = tituloBarraDeProgresso.replace('da disciplina', 'do bootcamp');
-        }
-
-        var quant_itens_unchecked = $(".icon-mark-as-read");
-        var quant_itens_checked = $(".module-item-status-icon [title='Completo']");
-        var quant_itens_unchecked = quant_itens_unchecked.length;
-        var quant_itens_checked = quant_itens_checked.length;
-        var quant_itens_curso = quant_itens_checked + quant_itens_unchecked;
-        var percentual_concluido = parseInt((100 * quant_itens_checked) / quant_itens_curso);
-
-        if (window.location.pathname.indexOf('/courses/') == 0 && quant_itens_curso > 0) {
-            $('.requirements_message').hide();
-            $('.ig-header-admin').hide();
-            if (percentual_concluido > 0) {
-                console.log("Barra de progresso carregada");
-                $("#right-side-wrapper").prepend(`<div class="progress_bar animated fadeInDown"><div style="padding: 0px 5px;">${tituloBarraDeProgresso} <span style="float: right;">${percentual_concluido}%<span></div><div class="pro-bar" style="margin-top: 7px; border-radius: 50px;"><div class="pro-bg"></div><div class="progress-bar-inner" style="border-radius: 50px; width: ${percentual_concluido}%; background: #00afa2;"></div></div></div>`);
-            }
-            else {
-                console.log("Barra de progresso não carregada, percentual não iniciado.");
-            }
-        }
-    }
-
-    function aviso_botão_recusarDisciplina() {
-        var btn = $('button[name ="reject"]');
-        btn.on('click', function () {
-            var texto_aviso_rejeitar = '<div id="alerta_div_rejeitar" class="alert alert-danger animated pulse" style="padding: 15px 25px; margin-bottom: 50px;"><strong>Voc&ecirc; j&aacute; est&aacute; matriculado nesta disciplina!</strong><br>Para informa&ccedil;&otilde;es sobre trancamento, utilize o bot&atilde;o "Ajuda" abaixo.</div>';
-            btn.attr("disabled", true);
-            $("#content").prepend(texto_aviso_rejeitar);
-        });
-    }
-
-    //Temporizadores
-
-    setTimeout(() => {
-        aviso_botão_recusarDisciplina();
-    }, 1);
-
-    setTimeout(() => {
-        alterandoIcon_itemConcuido();
-    }, 500);
-
-    setTimeout(() => {
-        progressBar();
-    }, 2000);
 
     //IMPLEMENTAÇÕES ANTIGAS
 
