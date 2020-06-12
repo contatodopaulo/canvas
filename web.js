@@ -13,7 +13,7 @@ $(document).ready(function () {
 
     //Chamadas
     if (isLoginScreen == -1) {
-        renderizarZendesk(tipoDeCursoAtual());
+        renderizarZendesk(getTipoDeCurso());
         renderizarModais();
     };
 
@@ -26,8 +26,76 @@ $(document).ready(function () {
         addBarraProgresso();
     }
 
+
     //Funções
-    function tipoDeCursoAtual() {
+
+    async function pesquisaNPS() {
+        const id = ENV.current_user_id;
+        const email = ENV.USER_EMAIL;
+
+        if (id && email) {
+            const userHasAlreadyVotedStorageCache = localStorage.getItem(`@IGTI:NPS:${id}`);
+
+            if (userHasAlreadyVotedStorageCache) {
+                return;
+            }
+
+            const userHasAlreadyVoted = await $.get(`https://nps.igti.com.br/igti/nps/${id}`, function (response) {
+                return response.data;
+            });
+
+            if (!userHasAlreadyVoted) {
+                exibirModalDePesquisa();
+            }
+            else {
+                console.log(userHasAlreadyVoted);
+                //localStorage.setItem(`@IGTI:NPS:${id}`, userHasAlreadyVoted.data);
+            }
+        }
+
+        async function exibirModalDePesquisa() {
+            $('body').append('<div id="fundoEscuro"></div><div id="npsContainer" class="animated flipInX"> <p> Em uma escala de 0 a 10, quanto você recomendaria o IGTI a um amigo ou colega? </p> <div id=npsNotesList> <span></span> <div> <button class="submitNoteNPS">0</button> <button class="submitNoteNPS">1</button> <button class="submitNoteNPS">2</button> <button class="submitNoteNPS">3</button> <button class="submitNoteNPS">4</button> <button class="submitNoteNPS">5</button> <button class="submitNoteNPS">6</button> <button class="submitNoteNPS">7</button> <button class="submitNoteNPS">8</button> <button class="submitNoteNPS">9</button> <button class="submitNoteNPS">10</button> </div> <span></span> </div></div><style> @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;1,300&display=swap"); div#fundoEscuro { background-color: rgba(0, 0, 0, 0.3); width: 100%; position: fixed; height: 100vh; z-index: 900; top: 0; right: 0; left: 0; bottom: 0; display: none; } div#npsContainer { display: none; height: 99px; z-index: 999; position: fixed; top: 0; width: 100%; background-color: white; padding-bottom: 20px; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.13); } div#npsContainer p { text-align: center; font-family: "Roboto", sans-serif; font-weight: 200; color: rgba(0, 0, 0, 0.8); font-size: 18px; margin-bottom: 10px; } div#npsNotesList { display: flex; justify-content: center; align-items: center; font-family: "Roboto", sans-serif; font-style: italic; color: rgba(0, 0, 0, 0.6); } div#npsNotesList div { margin: 0 10px; } div#npsNotesList div button { width: 50px; height: 50px; border-radius: 50%; outline: none; border: 0.5px solid rgba(0, 0, 0, 0.2); color: rgba(0, 0, 0, 0.5); font-size: 15px; background: transparent; cursor: pointer; transition: 0.2s; } div#npsNotesList div button:hover { color: white; font-weight: 800; background: rgb(0, 175, 162); border: 0.5px solid transparent; }</style>');
+            $('#fundoEscuro').fadeIn('300');
+            $('#npsContainer').removeClass('flipOutX').show();
+
+
+            $('#fundoEscuro').click(() => {
+                $('#npsContainer').addClass('flipOutX');
+                $('#fundoEscuro').fadeOut('300');
+            });
+
+            $('.submitNoteNPS').on('click', (e) => {
+                const note = e.target.textContent;
+
+                const userVotedData = {
+                    id,
+                    email,
+                    note,
+                }
+
+                const userVoted = $.ajax({
+                    type: 'POST',
+                    url: 'https://nps.igti.com.br/igti/nps',
+                    data: userVotedData,
+                    success: function (data) {
+                        console.log(`Aluno com id ${id} deu nota: ${note}`);
+                        localStorage.setItem(`@IGTI:NPS:${id}`, note);
+                    },
+                    contentType: "application/json",
+                    dataType: 'json'
+                });
+
+                $('#npsContainer').html('<p style="margin-top: 30px">Obrigado pelo seu feedback!</p>');
+
+                setTimeout(() => {
+                    $('#npsContainer').addClass('flipOutX');
+                    $('#fundoEscuro').fadeOut('300');
+                }, 1000);
+            });
+        }
+    }
+
+    function getTipoDeCurso() {
         //Caso o usuário esteja na página de inicio.  
         var tipo;
 
@@ -136,6 +204,12 @@ $(document).ready(function () {
                             filter: {
                                 section: '360008642151-Matrícula, 360008628431-Pontuação-e-Notas, 360008618711-Aulas'
                             },
+                        },
+                        chat: {
+                            suppress: true
+                        },
+                        contactForm: {
+                            suppress: false
                         },
                     }
                 }
@@ -280,7 +354,7 @@ $(document).ready(function () {
             var quant_itens_curso = quant_itens_checked + quant_itens_unchecked;
             var percentual_concluido = parseInt((100 * quant_itens_checked) / quant_itens_curso);
 
-            if (tipoDeCursoAtual() == 'bootcamp') {
+            if (getTipoDeCurso() == 'bootcamp') {
                 tituloBarraDeProgresso = tituloBarraDeProgresso.replace('da disciplina', 'do bootcamp');
             }
 
