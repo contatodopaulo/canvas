@@ -1,5 +1,92 @@
 //IGTI - Custom javascript
 //HTML escrito a partir deste JS, como "appends" de texto em elementos, devem conter códigos para letras acentuadas. Motivo: formatação UTF-8 inclusas após o carregamento da página, não é processada pelo Canvas. Problema desconhecido.
+async function pesquisaNPS() {
+
+    function postVotedNps(id, email, note) {
+        console.log(`Enviando id: ${id} email: ${email} e nota: ${note}`)
+
+        var xhr = new XMLHttpRequest();
+        var url = "https://nps.igti.com.br/igti/nps/";
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                localStorage.setItem(`@IGTI:CanvasNPS:${id}`, JSON.stringify({
+                    voted: true,
+                }));
+                console.log(`POST e alteração no storage realizado! @IGTI:CanvasNPS:${id} para TRUE`);
+            }
+        };
+        var data = JSON.stringify({
+            id,
+            email,
+            note,
+        });
+
+        xhr.send(data);
+    }
+
+    const id = ENV.current_user_id;
+    const email = ENV.USER_EMAIL;
+
+    if (id && email) {
+        console.log(`Variaveis id e email encontradas: ${id} - ${email}`)
+        const userVotedStorageCache = JSON.parse(localStorage.getItem(`@IGTI:CanvasNPS:${id}`));
+
+        if (!userVotedStorageCache) {
+            console.log(`Pesquisa no cache por @IGTI:CanvasNPS:${id}: não existe`)
+            const { voted } = await $.get(`https://nps.igti.com.br/igti/nps/${id}`);
+
+            if (voted) {
+                localStorage.setItem(`@IGTI:CanvasNPS:${id}`, JSON.stringify({
+                    voted: true,
+                }));
+                console.log(`Realizado busca de votação no banco de dados: ${voted}`)
+                console.log(`Setado valor no storage: @IGTI:CanvasNPS:${id} como ${voted}`)
+                return;
+            }
+
+            exibirModalDePesquisa();
+        } else if (!userVotedStorageCache.voted) {
+            postVotedNps(id, email, userVotedStorageCache.note);
+            console.log('User no storage com valor de FALSE, reenviando requisição POST');
+        } else {
+            return 'Aluno já votou e localizado no storage';
+        }
+    }
+
+    async function exibirModalDePesquisa() {
+        console.log('Exibindo modal de pesquisa')
+        $('body').append('<div id="fundoEscuro"></div><div id="npsContainer" class="animated flipInX"> <p> Em uma escala de 0 a 10, quanto você recomendaria o IGTI a um amigo ou colega? </p> <div id=npsNotesList> <span></span> <div> <button class="submitNoteNPS">0</button> <button class="submitNoteNPS">1</button> <button class="submitNoteNPS">2</button> <button class="submitNoteNPS">3</button> <button class="submitNoteNPS">4</button> <button class="submitNoteNPS">5</button> <button class="submitNoteNPS">6</button> <button class="submitNoteNPS">7</button> <button class="submitNoteNPS">8</button> <button class="submitNoteNPS">9</button> <button class="submitNoteNPS">10</button> </div> <span></span> </div></div><style> @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;1,300&display=swap"); div#fundoEscuro { background-color: rgba(0, 0, 0, 0.3); width: 100%; position: fixed; height: 100vh; z-index: 900; top: 0; right: 0; left: 0; bottom: 0; display: none; } div#npsContainer { display: none; z-index: 999; position: fixed; top: 0; width: 100%; background-color: white; padding-bottom: 20px; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.13); } div#npsContainer p { text-align: center; font-family: "Roboto", sans-serif; font-weight: 200; color: rgba(0, 0, 0, 0.8); font-size: 18px; margin-bottom: 10px; } div#npsNotesList { display: flex; justify-content: center; align-items: center; font-family: "Roboto", sans-serif; font-style: italic; color: rgba(0, 0, 0, 0.6); } div#npsNotesList div { margin: 0 10px; } div#npsNotesList div button { width: 50px; height: 50px; border-radius: 50%; outline: none; border: 0.5px solid rgba(0, 0, 0, 0.2); color: rgba(0, 0, 0, 0.5); font-size: 15px; background: transparent; cursor: pointer; transition: 0.2s; } div#npsNotesList div button:hover { color: white; font-weight: 800; background: rgb(0, 175, 162); border: 0.5px solid transparent; }</style>');
+        $('#fundoEscuro').fadeIn('300');
+        $('#npsContainer').removeClass('flipOutX').show();
+
+
+        $('#fundoEscuro').click(() => {
+            $('#npsContainer').addClass('flipOutX');
+            $('#fundoEscuro').fadeOut('300');
+        });
+
+        $('.submitNoteNPS').on('click', (e) => {
+            const note = e.target.textContent;
+
+            localStorage.setItem(`@IGTI:CanvasNPS:${id}`, JSON.stringify({
+                voted: false,
+                note,
+            }));
+
+            postVotedNps(id, email, note);
+
+            $('#npsContainer').html('<p style="margin-top: 30px">Obrigado pelo seu feedback!</p>');
+
+            setTimeout(() => {
+                $('#npsContainer').addClass('flipOutX');
+                $('#fundoEscuro').fadeOut('300');
+            }, 1000);
+        });
+    }
+}
+
 $(document).ready(function () {
 
     //CURSOS
@@ -13,8 +100,8 @@ $(document).ready(function () {
 
     //Chamadas
     if (isLoginScreen == -1) {
-        renderizarZendesk(getTipoDeCurso());
         renderizarModais();
+        refatorarOpcaoAjudaDoMenuLateral();
     };
 
     if (url == 'https://igti.instructure.com/?login_success=1' || url == 'https://igti.instructure.com/') {
@@ -29,242 +116,36 @@ $(document).ready(function () {
 
     //Funções
 
-    async function pesquisaNPS() {
-        const id = ENV.current_user_id;
-        const email = ENV.USER_EMAIL;
-
-        if (id && email) {
-            const userHasAlreadyVotedStorageCache = localStorage.getItem(`@IGTI:NPS:${id}`);
-
-            if (userHasAlreadyVotedStorageCache) {
-                return;
-            }
-
-            const userHasAlreadyVoted = await $.get(`https://nps.igti.com.br/igti/nps/${id}`, function (response) {
-                return response.data;
-            });
-
-            if (!userHasAlreadyVoted) {
-                exibirModalDePesquisa();
-            }
-            else {
-                console.log(userHasAlreadyVoted);
-                //localStorage.setItem(`@IGTI:NPS:${id}`, userHasAlreadyVoted.data);
-            }
-        }
-
-        async function exibirModalDePesquisa() {
-            $('body').append('<div id="fundoEscuro"></div><div id="npsContainer" class="animated flipInX"> <p> Em uma escala de 0 a 10, quanto você recomendaria o IGTI a um amigo ou colega? </p> <div id=npsNotesList> <span></span> <div> <button class="submitNoteNPS">0</button> <button class="submitNoteNPS">1</button> <button class="submitNoteNPS">2</button> <button class="submitNoteNPS">3</button> <button class="submitNoteNPS">4</button> <button class="submitNoteNPS">5</button> <button class="submitNoteNPS">6</button> <button class="submitNoteNPS">7</button> <button class="submitNoteNPS">8</button> <button class="submitNoteNPS">9</button> <button class="submitNoteNPS">10</button> </div> <span></span> </div></div><style> @import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;1,300&display=swap"); div#fundoEscuro { background-color: rgba(0, 0, 0, 0.3); width: 100%; position: fixed; height: 100vh; z-index: 900; top: 0; right: 0; left: 0; bottom: 0; display: none; } div#npsContainer { display: none; height: 99px; z-index: 999; position: fixed; top: 0; width: 100%; background-color: white; padding-bottom: 20px; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.13); } div#npsContainer p { text-align: center; font-family: "Roboto", sans-serif; font-weight: 200; color: rgba(0, 0, 0, 0.8); font-size: 18px; margin-bottom: 10px; } div#npsNotesList { display: flex; justify-content: center; align-items: center; font-family: "Roboto", sans-serif; font-style: italic; color: rgba(0, 0, 0, 0.6); } div#npsNotesList div { margin: 0 10px; } div#npsNotesList div button { width: 50px; height: 50px; border-radius: 50%; outline: none; border: 0.5px solid rgba(0, 0, 0, 0.2); color: rgba(0, 0, 0, 0.5); font-size: 15px; background: transparent; cursor: pointer; transition: 0.2s; } div#npsNotesList div button:hover { color: white; font-weight: 800; background: rgb(0, 175, 162); border: 0.5px solid transparent; }</style>');
-            $('#fundoEscuro').fadeIn('300');
-            $('#npsContainer').removeClass('flipOutX').show();
-
-
-            $('#fundoEscuro').click(() => {
-                $('#npsContainer').addClass('flipOutX');
-                $('#fundoEscuro').fadeOut('300');
-            });
-
-            $('.submitNoteNPS').on('click', (e) => {
-                const note = e.target.textContent;
-
-                const userVotedData = {
-                    id,
-                    email,
-                    note,
-                }
-
-                const userVoted = $.ajax({
-                    type: 'POST',
-                    url: 'https://nps.igti.com.br/igti/nps',
-                    data: userVotedData,
-                    success: function (data) {
-                        console.log(`Aluno com id ${id} deu nota: ${note}`);
-                        localStorage.setItem(`@IGTI:NPS:${id}`, note);
-                    },
-                    contentType: "application/json",
-                    dataType: 'json'
-                });
-
-                $('#npsContainer').html('<p style="margin-top: 30px">Obrigado pelo seu feedback!</p>');
-
-                setTimeout(() => {
-                    $('#npsContainer').addClass('flipOutX');
-                    $('#fundoEscuro').fadeOut('300');
-                }, 1000);
-            });
-        }
-    }
-
-    function getTipoDeCurso() {
-        //Caso o usuário esteja na página de inicio.  
-        var tipo;
-
-        parceiros && parceiros.forEach(curso => {
-            if (url.indexOf(curso) > 0) {
-                tipo = 'parceiros';
-            } else if (ENV.STUDENT_PLANNER_COURSES) {
-                ENV.STUDENT_PLANNER_COURSES.forEach(cursoEnv => {
-                    if (cursoEnv.id == curso) tipo = 'parceiros'
-                });
-            }
-        });
-
-        if (!tipo) {
-            bootcamps && bootcamps.forEach(curso => {
-                if (url.indexOf(curso) > 0) {
-                    tipo = 'bootcamp'
-                } else if (ENV.STUDENT_PLANNER_COURSES) {
-                    ENV.STUDENT_PLANNER_COURSES.forEach(cursoEnv => {
-                        if (cursoEnv.id == curso) tipo = 'bootcamp'
-                    })
-                }
-            })
-        }
-
-        if (!tipo) tipo = 'pos';
-
-        return tipo; //parceiros | bootcamp | pos
-    }
-
-    function renderizarZendesk(tipoDeCurso) {
-        if (tipoDeCurso == 'parceiros') {
-            window.zEmbed || function (e, t) {
-                var n, o, d, i, s, a = [],
-                    r = document.createElement("iframe");
-                window.zEmbed = function () {
-                    a.push(arguments)
-                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
-                try {
-                    o = s
-                } catch (e) {
-                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
-                }
-                o.open()._l = function () {
-                    var e = this.createElement("script");
-                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
-                }, o.write('<body onload="document._l();">'), o.close()
-                window.zESettings = {
-                    webWidget: {
-                        helpCenter: {
-                            suppress: false,
-                            filter: {
-                                section: '360009058131-Seleção-da-oferta-para-divulgação, 360008969172-Divulgação-da-oferta, 360009100671-Analise-de-desempenho, 360007958792-Atendimento-ao-parceiro'
-                            },
-                        },
-
-                        chat: {
-                            departments: {
-                                enabled: ['Parceiros'],
-                                select: 'Parceiros'
-                            },
-                            title: {
-                                '*': 'Atendimento ao Parceiro'
-
-                            }
-
-                        },
-
-                        launcher: {
-                            chatLabel: {
-                                '*': 'Atendimento'
-                            }
-                        },
-
-                        contactForm: {
-                            title: {
-                                '*': 'Atendimento ao Parceiro'
-                            }
-                        },
-
-                    }
-                }
-            }();
-        }
-
-        if (tipoDeCurso == 'bootcamp') {
-            window.zEmbed || function (e, t) {
-                var n, o, d, i, s, a = [],
-                    r = document.createElement("iframe");
-                window.zEmbed = function () {
-                    a.push(arguments)
-                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
-                try {
-                    o = s
-                } catch (e) {
-                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
-                }
-                o.open()._l = function () {
-                    var e = this.createElement("script");
-                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
-                }, o.write('<body onload="document._l();">'), o.close()
-                window.zESettings = {
-                    webWidget: {
-                        helpCenter: {
-                            suppress: false,
-                            filter: {
-                                section: '360008642151-Matrícula, 360008628431-Pontuação-e-Notas, 360008618711-Aulas'
-                            },
-                        },
-                        chat: {
-                            suppress: true
-                        },
-                        contactForm: {
-                            suppress: false
-                        },
-                    }
-                }
-            }();
-        }
-
-        if (tipoDeCurso == 'pos') {
-
-            window.zEmbed || function (e, t) {
-                var n, o, d, i, s, a = [],
-                    r = document.createElement("iframe");
-                window.zEmbed = function () {
-                    a.push(arguments)
-                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
-                try {
-                    o = s
-                } catch (e) {
-                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
-                }
-                o.open()._l = function () {
-                    var e = this.createElement("script");
-                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
-                }, o.write('<body onload="document._l();">'), o.close()
-            }();
-        }
-    }
-
     function renderizarModais() {
         // Modal de aviso
-        var modal_estilos = 'display: block; max-width: 700px; padding: 25px; background: #fff; border-radius: 5px; -webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); -moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 99999999;';
+        var modal_estilos = 'display: block; max-width: 900px; padding: 25px; background: #fff; border-radius: 5px; -webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); -moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 99999999; overflow: visible;';
         var fundo_modal_estilos = 'top: 0; right: 0; bottom: 0; left: 0; position: fixed; background-color: rgba(0, 0, 0, 0.6); z-index: 99999999; display: none;';
-
-        $(".fundo_modal, .close").click(function () { $(".fundo_modal").fadeOut(100); });
-        $(".modalStop").click(function (e) { e.stopPropagation(); });
 
         //Ao passar o mes para dataExpiracao, subtrair 1. 
 
         const modals = [
             {
-                name: "inscricoesBootcamp",
-                dataExpiracao: new Date(2020, 5, 29, 22),
+                name: "modalFundamentos2aEntradaBootcamp",
+                dataExpiracao: new Date(2020, 6, 2, 21),
                 chamada: () => {
-                    if (!localStorage.getItem('@IGTI:ModalBootcamp04Jun2020') && new Date() < new Date(2020, 6, 29, 22)) {
+                    function isUrl() {
+                        const urls = ['2953', '2963', '2961', '2954', '2952', '2960', '2956', '2951', '2959', '2958', '2957', '2962'];
+                        const response = urls.find(c => window.location.href.indexOf(c) > 0);
+                        if (response) return true;
+                        else return false;
+                    }
+
+                    if (isUrl() && !localStorage.getItem('@IGTI:ModalBootcamp02jul2020')) {
                         var modal_inscricoesBootcamp = '<div id="modal_inscricoesBootcamp" class="fundo_modal" style="' + fundo_modal_estilos + '">'
-                            + '<div class="modalStop" style="' + modal_estilos + '">'
-                            + '<h1 style="margin-bottom: 25px;">Programa de Bolsas para Bootcamps</h1>'
-                            + '<p style="margin-bottom: 20px; text-align: justify; text-justify: inter-word;" >Está aberto até 30 de junho, o processo seletivo de bolsas para bootcamps do IGTI. São 13 bootcamps subsidiados pelo programa, nas áreas de Software Development, Inteligência Artificial, Data Science, Cybersecurity, Cloud Computing e UX.</p>'
-                            + '<p style="margin-bottom: 35px;">Para inscrever-se no processo seletivo acesse <a target="_blank" href="https://bit.ly/3eNmT4F">aqui</a></p>'
+                            + '<div class="modalStop" style="display: block; max-width: 400px; padding: 25px; background: #fff; border-radius: 5px; -webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); -moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 99999999; overflow: visible;">'
+                            + '<p style="margin-bottom: 40px; text-align: center;" ><strong>Olá, seja bem-vindo!</strong><br><br> Informamos que o conteúdo do bootcamp estará disponível hoje, dia 02 de julho a partir das 21h (horário de Brasília).</p>'
                             + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal_inscricoesBootcamp">Ok</button></div>'
                             + '</div></div>';
 
                         $("body").append(modal_inscricoesBootcamp);
                         $("#modal_inscricoesBootcamp").fadeIn(200);
 
-                        localStorage.setItem('@IGTI:ModalBootcamp04Jun2020', true);
+                        localStorage.setItem('@IGTI:ModalBootcamp02jul2020', true);
 
                         $("#btnModal_inscricoesBootcamp").click(function () {
                             $('#modal_inscricoesBootcamp').fadeOut(100);
@@ -277,8 +158,8 @@ $(document).ready(function () {
                 }
             },
             {
-                name: "avisoTemporario",
-                dataExpiracao: new Date(2020, 5, 11, 23),
+                name: "descontoPosParaAlunoBootcamp",
+                dataExpiracao: new Date(2020, 5, 23, 23),
                 chamada: () => {
                     function isUrl() {
                         const urls = ['2944', '2945', '2946', '2939', '2940', '2941', '2942', '2934', '2935', '2936', '2937', '2932', '2933', '2938'];
@@ -287,17 +168,28 @@ $(document).ready(function () {
                         else return false;
                     }
 
-                    if (isUrl() && !localStorage.getItem('@IGTI:Modal:11Jun2020')) {
+                    if (isUrl() && !localStorage.getItem('@IGTI:Modal:23Jun2020')) {
                         var modal_avisoTemporario = '<div id="modal_avisoTemporario" class="fundo_modal" style="' + fundo_modal_estilos + '">'
-                            + '<div class="modalStop" style="' + modal_estilos + '">'
-                            + '<p style="margin-bottom: 20px; text-align: center;" >Devido ao feriado religioso do dia 11/06, o restante do material deste módulo será liberado até às 22h do dia 12/06.</p>'
-                            + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnmodal_avisoTemporario">Ok</button></div>'
+                            + '<div class="modalStop" style="' + modal_estilos + ' border-left: 15px solid #00afa2">'
+                            + '<h1 align="center">Desconto especial para alunos do Bootcamp: </h1>'
+                            + '<p style="margin-bottom: 30px;" align="center">Que tal dar mais um passo na evolução da sua carreira?</p>'
+                            + '<p>O IGTI está oferendo um desconto especial de 40% para os alunos que estão cursando o bootcamp e que desejem continuar seus estudos na pós graduação à distância mais inovadora do país!</p>'
+                            + '<p style="margin-bottom: 30px;">Acesse o link abaixo, preencha a proposta de contrato usando o promocode em anexo e inicie seu processo de admissão*.</p>'
+                            + '<p style="margin-bottom: 40px;">Estamos te aguardando,'
+                            + '<br>Equipe IGTI.</p>'
+                            + '<div style="font-size: 12px;">'
+                            + '<p>*Regras de uso do voucher</p>'
+                            + '<ul>'
+                            + '<li>Link para solicitação do contrato: <a target="_blank" href="https://www.igti.com.br/solicitar-contrato-pos">  AQUI.</a></li><li>Promocode: <strong>40OFF-BTC-2020-1</strong></li><li>Promocode válido até 23 de junho de 2020.</li><li>Apenas para novos contratos de pós graduação.</li><li>Titulação mínima do candidato: graduação completa.</li><li>Início das aulas: 02 de julho de 2020.</li><li>Pagamento no cartão de crédito.</li><li>Desconto não cumulativo.</li><li>Promoção pessoal e intransferível.</li>'
+                            + '</ul>'
+                            + '</div>'
+                            + '<div style="margin-top: 20px; display: flex; align-items: center;"><button onMouseOver="this.style.background=`#DCDCDC`" onMouseOut="this.style.background=`#D3D3D3`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #D3D3D3; border:none; color: #696969" id="btnmodal_avisoTemporario">Ok</button></div>'
                             + '</div></div>';
 
                         $("body").append(modal_avisoTemporario);
                         $("#modal_avisoTemporario").fadeIn(200);
 
-                        localStorage.setItem('@IGTI:Modal:11Jun2020', true);
+                        localStorage.setItem('@IGTI:Modal:23Jun2020', true);
 
                         $("#btnmodal_avisoTemporario").click(function () {
                             $('#modal_avisoTemporario').fadeOut(100);
@@ -318,6 +210,243 @@ $(document).ready(function () {
                 }
             })
         }
+
+        $(".fundo_modal, .close").click(function () { $(".fundo_modal").fadeOut(100); });
+        $(".modalStop").click(function (e) { e.stopPropagation(); });
+    }
+
+    function getTipoDeCurso() {
+        //Caso o usuário esteja na página de inicio.  
+        var tipo;
+
+        parceiros && parceiros.forEach(curso => {
+            if (url.indexOf(curso) > 0) {
+                tipo = 'parceiros';
+            } else if (ENV.STUDENT_PLANNER_COURSES) {
+
+
+                ENV.STUDENT_PLANNER_COURSES.forEach(cursoEnv => {
+                    if (cursoEnv.id == curso) tipo = 'parceiros'
+                });
+            }
+        });
+
+        if (!tipo) {
+            var title = document.getElementsByTagName('title')[0];
+
+            if (ENV.STUDENT_PLANNER_COURSES) {
+                ENV.STUDENT_PLANNER_COURSES.forEach(cursoEnv => {
+                    if (cursoEnv.originalName.indexOf('Bootcamp') >= 0 || cursoEnv.originalName.indexOf('bootcamp') >= 0) tipo = 'bootcamp'
+                })
+            }
+
+            if (title && title.innerText.indexOf('Bootcamp') >= 0 || title.innerText.indexOf('bootcamp') >= 0) {
+                tipo = 'bootcamp'
+            }
+        }
+
+        if (!tipo) tipo = 'pos';
+
+        return tipo; //parceiros | bootcamp | pos
+    }
+
+    function refatorarOpcaoAjudaDoMenuLateral() {
+        $('#global_nav_help_link').click(() => {
+
+            var intervalo = setInterval(() => {
+                if ($('#help_tray a').length > 0) {
+                    const links = $('#help_tray a');
+                    if (links.length > 0) {
+                        links.map(index => {
+                            const link = links[index];
+                            const linkText = link.textContent;
+
+                            if (linkText === 'Pós-graduação') {
+                                refatorarLink(link, () => {
+                                    renderizarZendesk('pos');
+                                    $('body').click();
+                                });
+                            }
+                            else if (linkText === 'Bootcamp') {
+                                refatorarLink(link, () => {
+                                    renderizarZendesk('bootcamp');
+                                    $('body').click();
+                                });
+                            } else if (linkText === 'Parceiros') {
+                                refatorarLink(link, () => {
+                                    renderizarZendesk('parceiros');
+                                    $('body').click();
+                                });
+                            }
+                        })
+                    }
+                    clearInterval(intervalo);
+                }
+            }, 100);
+
+            function refatorarLink(link, action) {
+                link.href = '#';
+                link.target = '';
+                link.onclick = action;
+            }
+
+        });
+    }
+
+    function renderizarZendesk(tipoDeCurso) {
+
+        if (window.zE) {
+            $('iframe').remove();
+            window.zE = null;
+            window.zEmbed = null;
+        }
+
+        if (tipoDeCurso == 'parceiros') {
+
+            window.zEmbed || function (e, t) {
+                var n, o, d, i, s, a = [],
+                    r = document.createElement("iframe");
+                window.zEmbed = function () {
+                    a.push(arguments)
+                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Paulooooo", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                try {
+                    o = s
+                } catch (e) {
+                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                }
+                o.open()._l = function () {
+                    var e = this.createElement("script");
+                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                }, o.write('<body onload="document._l();">'), o.close()
+                zE('webWidget', 'toggle')
+                zE('webWidget', 'helpCenter:setSuggestions', { search: 'igti' })
+                window.zESettings = {
+                    webWidget: {
+                        position: {
+                            horizontal: 'right'
+                        },
+                        helpCenter: {
+                            suppress: false,
+                            filter: {
+                                section: '360009058131-Sele%C3%A7%C3%A3o-da-oferta-para-divulga%C3%A7%C3%A3o, 360008969172-Divulga%C3%A7%C3%A3o-da-oferta, 360009100671-Analise-de-desempenho, 360009160151-Pagamento-, 360009170611-Ferramentas, 360007958792-Atendimento-ao-parceiro'
+                            },
+                        },
+
+                        chat: {
+                            departments: {
+                                enabled: ['Parceiros'],
+                                select: 'Parceiros'
+                            },
+                            title: {
+                                '*': 'Atendimento ao Parceiro'
+
+                            }
+
+                        },
+
+                        contactForm: {
+                            title: {
+                                '*': 'Atendimento ao Parceiro'
+                            }
+                        },
+
+                    }
+                }
+            }();
+
+
+
+        }
+
+        if (tipoDeCurso == 'bootcamp') {
+
+            window.zEmbed || function (e, t) {
+                var n, o, d, i, s, a = [],
+                    r = document.createElement("iframe");
+                window.zEmbed = function () {
+                    a.push(arguments)
+                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Title-Alunos-Pos", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                try {
+                    o = s
+                } catch (e) {
+                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                }
+                o.open()._l = function () {
+                    var e = this.createElement("script");
+                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                }, o.write('<body onload="document._l();">'), o.close()
+                zE('webWidget', 'toggle')
+                zE('webWidget', 'helpCenter:setSuggestions', { search: 'notas' })
+                window.zESettings = {
+                    webWidget: {
+                        position: {
+                            horizontal: 'right'
+                        },
+                        helpCenter: {
+                            suppress: false,
+                            filter: {
+                                section: '360008642151-Matr%C3%ADcula-e-Sele%C3%A7%C3%A3o,360008618711-Cronograma,360008628431-Aulas-e-Atividades,360008749432-Crit%C3%A9rios-de-aprova%C3%A7%C3%A3o-e-Certificado,360008859351-Suporte-e-Comunica%C3%A7%C3%A3o'
+                            },
+                        },
+                        chat: {
+                            suppress: true
+                        },
+                        contactForm: {
+                            suppress: false
+                        },
+
+                    }
+                }
+            }();
+
+
+        }
+
+        if (tipoDeCurso == 'pos') {
+
+
+            window.zEmbed || function (e, t) {
+                var n, o, d, i, s, a = [],
+                    r = document.createElement("iframe");
+                window.zEmbed = function () {
+                    a.push(arguments)
+                }, window.zE = window.zE || window.zEmbed, r.src = "javascript:false", r.title = "Title-Alunos-Pos", r.role = "presentation", (r.frameElement || r).style.cssText = "display: none", d = document.getElementsByTagName("script"), d = d[d.length - 1], d.parentNode.insertBefore(r, d), i = r.contentWindow, s = i.document;
+                try {
+                    o = s
+                } catch (e) {
+                    n = document.domain, r.src = 'javascript:var d=document.open();d.domain="' + n + '";void(0);', o = s
+                }
+                o.open()._l = function () {
+                    var e = this.createElement("script");
+                    n && (this.domain = n), e.id = "js-iframe-async", e.src = "https://assets.zendesk.com/embeddable_framework/main.js", this.t = +new Date, this.zendeskHost = "igti.zendesk.com", this.zEQueue = a, this.body.appendChild(e)
+                }, o.write('<body onload="document._l();">'), o.close()
+                zE('webWidget', 'toggle')
+                zE('webWidget', 'helpCenter:setSuggestions', { search: 'notas' })
+                window.zESettings = {
+                    webWidget: {
+                        position: {
+                            horizontal: 'right'
+                        },
+                        helpCenter: {
+                            suppress: false,
+                            filter: {
+                                section: '360000166046-Ambiente-de-Aprendizagem,360000164463-Atendimento-ao-Aluno,360000166166-Atividades,360000164483-Aula-Interativa,360000166126-Cronograma,360000166106-Financeiro,360000167723-Processo-Seletivo,360000164503-Projeto-Aplicado,360000166146-Registro-Acad%C3%AAmico'
+                            },
+                        },
+                        chat: {
+                            supress: true
+                        },
+                        chat: {
+                            suppress: true
+                        },
+                        contactForm: {
+                            suppress: false
+                        },
+
+                    }
+                }
+            }();
+        }
     }
 
     function impossibilitarAlunoDeRejeitarDisciplina() {
@@ -333,11 +462,8 @@ $(document).ready(function () {
         var renderizandoModificacoes = setInterval(() => {
             //Mudando icon de check
             $(".module-item-status-icon [title='Completo']").addClass("icon-Solid icon-publish");
-
-            //Removendo elementos no cabeçalho dos blocos
             $('.requirements_message').hide();
-            $('.ig-header-admin').hide();
-        }, 150);
+        }, 50);
 
         setTimeout(() => {
             clearInterval(renderizandoModificacoes)
@@ -398,11 +524,11 @@ $(document).ready(function () {
         }
     }
     /*
-      //esconde o link de download do arquivo
-      if(window.location.pathname.indexOf('/files/') >= 0){
-        $("#content div:first").remove();
-        //$("h2").hide();
-      }*/
+    //esconde o link de download do arquivo
+    if(window.location.pathname.indexOf('/files/') >= 0){
+    $("#content div:first").remove();
+    //$("h2").hide();
+    }*/
 
     //se estiver na página inicial do grupo:,
 
