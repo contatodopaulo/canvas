@@ -451,11 +451,11 @@ $(document).ready(function () {
                         helpCenter: {
                             suppress: false,
                             filter: {
-                                section: '360008642151-Matr%C3%ADcula-e-Sele%C3%A7%C3%A3o,360008618711-Cronograma,360008628431-Aulas-e-Atividades,360008749432-Crit%C3%A9rios-de-aprova%C3%A7%C3%A3o-e-Certificado,360008859351-Suporte-e-Comunica%C3%A7%C3%A3o'
+                                section: '360008642151-Matr%C3%ADcula-e-Sele%C3%A7%C3%A3o, 360043408431-O-que-fazer-caso-eu-desista-de-continuar-o-Bootcamp-, 360008618711-Cronograma,360008628431-Aulas-e-Atividades,360008749432-Crit%C3%A9rios-de-aprova%C3%A7%C3%A3o-e-Certificado,360008859351-Suporte-e-Comunica%C3%A7%C3%A3o'
                             },
                         },
                         chat: {
-                            suppress: true
+                            suppress: false
                         },
                         contactForm: {
                             suppress: false
@@ -500,10 +500,7 @@ $(document).ready(function () {
                             },
                         },
                         chat: {
-                            supress: true
-                        },
-                        chat: {
-                            suppress: true
+                            supress: false
                         },
                         contactForm: {
                             suppress: false
