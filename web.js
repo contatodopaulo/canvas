@@ -3,7 +3,7 @@
 async function pesquisaNPS() {
 
     function postVotedNps(id, email, note) {
-        console.log(`Enviando id: ${id} email: ${email} e nota: ${note}`)
+        //console.log(`Enviando id: ${id} email: ${email} e nota: ${note}`)
 
         var xhr = new XMLHttpRequest();
         var url = "https://nps.igti.com.br/igti/nps/";
@@ -14,7 +14,7 @@ async function pesquisaNPS() {
                 localStorage.setItem(`@IGTI:CanvasNPS:${id}`, JSON.stringify({
                     voted: true,
                 }));
-                console.log(`POST e alteração no storage realizado! @IGTI:CanvasNPS:${id} para TRUE`);
+        //        console.log(`POST e alteração no storage realizado! @IGTI:CanvasNPS:${id} para TRUE`);
             }
         };
         var data = JSON.stringify({
@@ -30,26 +30,26 @@ async function pesquisaNPS() {
     const email = ENV.USER_EMAIL;
 
     if (id && email) {
-        console.log(`Variaveis id e email encontradas: ${id} - ${email}`)
+        //console.log(`Variaveis id e email encontradas: ${id} - ${email}`)
         const userVotedStorageCache = JSON.parse(localStorage.getItem(`@IGTI:CanvasNPS:${id}`));
 
         if (!userVotedStorageCache) {
-            console.log(`Pesquisa no cache por @IGTI:CanvasNPS:${id}: não existe`)
+            //console.log(`Pesquisa no cache por @IGTI:CanvasNPS:${id}: não existe`)
             const { voted } = await $.get(`https://nps.igti.com.br/igti/nps/${id}`);
 
             if (voted) {
                 localStorage.setItem(`@IGTI:CanvasNPS:${id}`, JSON.stringify({
                     voted: true,
                 }));
-                console.log(`Realizado busca de votação no banco de dados: ${voted}`)
-                console.log(`Setado valor no storage: @IGTI:CanvasNPS:${id} como ${voted}`)
+                //console.log(`Realizado busca de votação no banco de dados: ${voted}`)
+                //console.log(`Setado valor no storage: @IGTI:CanvasNPS:${id} como ${voted}`)
                 return;
             }
 
             exibirModalDePesquisa();
         } else if (!userVotedStorageCache.voted) {
             postVotedNps(id, email, userVotedStorageCache.note);
-            console.log('User no storage com valor de FALSE, reenviando requisição POST');
+            //console.log('User no storage com valor de FALSE, reenviando requisição POST');
         } else {
             return 'Aluno já votou e localizado no storage';
         }
@@ -105,6 +105,7 @@ $(document).ready(function () {
     };
 
     if (url == 'https://igti.instructure.com/?login_success=1' || url == 'https://igti.instructure.com/') {
+        pesquisaNPS();
         impossibilitarAlunoDeRejeitarDisciplina();
     }
 
@@ -146,6 +147,71 @@ $(document).ready(function () {
                         $("#modal_inscricoesBootcamp").fadeIn(200);
 
                         localStorage.setItem('@IGTI:ModalBootcamp02jul2020', true);
+
+                        $("#btnModal_inscricoesBootcamp").click(function () {
+                            $('#modal_inscricoesBootcamp').fadeOut(100);
+                        });
+
+                        return true;
+                    }
+
+                    return false;
+                }
+            },
+            {
+                name: "modal08JulhoDe2020",
+                dataExpiracao: new Date(2020, 6, 10, 2),
+                chamada: () => {
+                    function isUrl() {
+                        const urls = ['3059', '3076', '3077', '3062', '3085', '3074', '3075', '3068', '3069', '3084', '3072', '3073', '3064', '3065', '3063', '3080', '3066', '3067', '3078', '3079', '3070', '3086', '3081', '3082']
+                        const response = urls.find(c => window.location.href.indexOf(c) > 0);
+                        if (response) return true;
+                        else return false;
+                    }
+
+                    if (isUrl() && !localStorage.getItem('@IGTI:modal08JulhoDe2020')) {
+                        var modal_inscricoesBootcamp = '<div id="modal_inscricoesBootcamp" class="fundo_modal" style="' + fundo_modal_estilos + '">'
+                            + '<div class="modalStop" style="display: block; max-width: 500px; padding: 25px; background: #fff; border-radius: 5px; -webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); -moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 99999999; overflow: visible;">'
+                            + '<p style="margin-bottom: 40px; text-align: center;" >Olá, informamos que o conteúdo do próximo módulo será disponibilizado até às 23h59 (horário de Brasília) do dia 09/07.<br><br>Equipe IGTI</p>'
+                            + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal_inscricoesBootcamp">Ok</button></div>'
+                            + '</div></div>';
+
+                        $("body").append(modal_inscricoesBootcamp);
+                        $("#modal_inscricoesBootcamp").fadeIn(200);
+
+                        localStorage.setItem('@IGTI:modal08JulhoDe2020', true);
+
+                        $("#btnModal_inscricoesBootcamp").click(function () {
+                            $('#modal_inscricoesBootcamp').fadeOut(100);
+                        });
+
+                        return true;
+                    }
+
+                    return false;
+                }
+            },{
+                name: "modal10Julho2020",
+                dataExpiracao: new Date(2020, 6, 11, 2),
+                chamada: () => {
+                    function isUrl() {
+                        const urls = ['3007']
+                        const response = urls.find(c => window.location.href.indexOf(c) > 0);
+                        if (response) return true;
+                        else return false;
+                    }
+
+                    if (isUrl() && !localStorage.getItem('@IGTI:modal10Julho2020')) {
+                        var modal_inscricoesBootcamp = '<div id="modal_inscricoesBootcamp" class="fundo_modal" style="' + fundo_modal_estilos + '">'
+                            + '<div class="modalStop" style="display: block; max-width: 500px; padding: 25px; background: #fff; border-radius: 5px; -webkit-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); -moz-box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); box-shadow: 0px 6px 14px -2px rgba(0,0,0,0.75); position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 99999999; overflow: visible;">'
+                            + '<p style="margin-bottom: 40px; text-align: center;" >Olá! O material da sua disciplina de fundamentos gratuita será liberado até às 23:59 de hoje (10/07).<br><br>Equipe IGTI</p>'
+                            + '<div style="display: flex; align-items: center;"><button onMouseOver="this.style.background=`#10ccbc`" onMouseOut="this.style.background=`#00afa2`" style="padding: 15px;margin-bottom: 25px; width: 200px; margin: 0 auto; border-radius: 4px; cursor: pointer; outline: none; transition: 0.2s; background: #00afa2; border:none; color: #FFF" id="btnModal_inscricoesBootcamp">Ok</button></div>'
+                            + '</div></div>';
+
+                        $("body").append(modal_inscricoesBootcamp);
+                        $("#modal_inscricoesBootcamp").fadeIn(200);
+
+                        localStorage.setItem('@IGTI:modal10Julho2020', true);
 
                         $("#btnModal_inscricoesBootcamp").click(function () {
                             $('#modal_inscricoesBootcamp').fadeOut(100);
